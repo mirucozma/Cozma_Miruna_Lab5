@@ -24,7 +24,6 @@ namespace Cozma_Miruna_Lab5
         CollectionViewSource customerViewSource;
         Binding firstNameTextBoxBinding = new Binding();
         Binding lastNameTextBoxBinding = new Binding();
-        //Binding purchaseDateDatePicker = new Binding();
 
         CollectionViewSource carOrdersViewSource;
 
@@ -42,10 +41,8 @@ namespace Cozma_Miruna_Lab5
 
             firstNameTextBoxBinding.Path = new PropertyPath("First Name");
             lastNameTextBoxBinding.Path = new PropertyPath("Last Name");
-            //purchaseDateDatePickerBinding.Path = new PropertyPath("Purchase Date");
             firstNameTextBox.SetBinding(TextBox.TextProperty, firstNameTextBoxBinding);
             lastNameTextBox.SetBinding(TextBox.TextProperty, lastNameTextBoxBinding);
-            //purchaseDateDatePicker.SetBinding(DatePicker.TextProperty, purchaseDateDatePickerBinding);
         }
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -61,21 +58,18 @@ namespace Cozma_Miruna_Lab5
 
             carOrdersViewSource =
             ((System.Windows.Data.CollectionViewSource)(this.FindResource("carOrdersViewSource")));
-            //carOrdersViewSource.Source = ctx.Orders.Local;
             ctx.Orders.Load();
             BindDataGrid();
             cbCars.ItemsSource = ctx.Cars.Local;
-            //cbCars.DisplayMemberPath = "Make";
             cbCars.SelectedValuePath = "CarId";
             cbCustomers.ItemsSource = ctx.Customers.Local;
-            //cbCustomers.DisplayMemberPath = "FirstName";
             cbCustomers.SelectedValuePath = "CustId";
-
         }
-        
+        //======ACTIONS========================================================================================
         private void btnNew_Click(object sender, RoutedEventArgs e)
         {
             action = ActionState.New;
+           // SetValidationBinding();
             TabItem ti = tbCtrlAutoGeist.SelectedItem as TabItem;
             switch (ti.Header)
             {
@@ -87,23 +81,28 @@ namespace Cozma_Miruna_Lab5
                     makeTextBox.Text = "";
                     modelTextBox.Text = "";
                     Keyboard.Focus(bodyStyleTextBox);
+                    SetValidationBinding();
                     break;
                 case "Customers":
                     BindingOperations.ClearBinding(firstNameTextBox, TextBox.TextProperty);
                     BindingOperations.ClearBinding(lastNameTextBox, TextBox.TextProperty);
+                    BindingOperations.ClearBinding(purchaseDateDatePicker, DatePicker.SelectedDateProperty);
                     firstNameTextBox.Text = "";
                     lastNameTextBox.Text = "";
+                    purchaseDateDatePicker.SelectedDate = DateTime.Now;
                     Keyboard.Focus(firstNameTextBox);
+                    SetValidationBinding();
                     break;
                 case "Orders":
-                    break;
+                    SaveOrders();
+                    break; 
             }
-
         }
-
         private void btnEdit_Click(object sender, RoutedEventArgs e)
         {
             action = ActionState.Edit;
+
+            SetValidationBinding();
         }
 
         private void btnDelete_Click(object sender, RoutedEventArgs e)
@@ -189,14 +188,12 @@ namespace Cozma_Miruna_Lab5
 
 
             }
-
         }
         //=====CUSTOMERS=======================================================================
         private void btnPrevCustomers_Click(object sender, RoutedEventArgs e)
         {
             customerViewSource.View.MoveCurrentToPrevious();
         }
-
         private void btnNextCustomers_Click(object sender, RoutedEventArgs e)
         {
             customerViewSource.View.MoveCurrentToNext();
@@ -212,11 +209,9 @@ namespace Cozma_Miruna_Lab5
                     {
                         FirstName = firstNameTextBox.Text.Trim(),
                         LastName = lastNameTextBox.Text.Trim(),
-                        //PurchaseDate = purchaseDateDatePicker.Text.Trim(),
                     };
                     ctx.Customers.Add(customer);
                     customerViewSource.View.Refresh();
-                    //customerViewSource.View.MoveCurrentTo(customer);
                     ctx.SaveChanges();
                 }
 
@@ -224,9 +219,6 @@ namespace Cozma_Miruna_Lab5
                 {
                     MessageBox.Show(ex.Message);
                 }
-                //firstNameTextBox.SetBinding(TextBox.TextProperty, firstNameTextBoxBinding);
-                //lastNameTextBox.SetBinding(TextBox.TextProperty, lastNameTextBoxBinding);
-                //purchaseDateDatePicker.SetBinding(DatePicker.TextProperty, purchaseDateDatePickerBinding);  //?
             }
             else if (action == ActionState.Edit)
             {
@@ -235,18 +227,13 @@ namespace Cozma_Miruna_Lab5
                     customer = (Customer)customerDataGrid.SelectedItem;
                     customer.FirstName = firstNameTextBox.Text.Trim();
                     customer.LastName = lastNameTextBox.Text.Trim();
-                    //customer.PurchaseDate = purchaseDateDatePicker.Text.Trim();
                     ctx.SaveChanges();
                 }
                 catch (DataException ex)
                 {
                     MessageBox.Show(ex.Message);
                 }
-                //customerViewSource.View.Refresh();
-                //customerViewSource.View.MoveCurrentTo(customer);
-                //firstNameTextBox.SetBinding(TextBox.TextProperty, firstNameTextBoxBinding);
                 lastNameTextBox.SetBinding(TextBox.TextProperty, lastNameTextBoxBinding);
-                //purchaseDateDatePicker.SetBinding(TextBox.TextProperty,purchaseDateDatePickerBinding);
             }
             else if (action == ActionState.Delete)
             {
@@ -260,10 +247,6 @@ namespace Cozma_Miruna_Lab5
                 {
                     MessageBox.Show(ex.Message);
                 }
-                //customerViewSource.View.Refresh();
-                //firstNameTextBox.SetBinding(TextBox.TextProperty, firstNameTextBoxBinding);
-                //lastNameTextBox.SetBinding(TextBox.TextProperty, lastNameTextBoxBinding);
-                //purchaseDateDatePicker.SetBinding(TextBox.TextProperty, purchaseDateDatePickerBinding);
             }
 
         }
@@ -324,8 +307,7 @@ namespace Cozma_Miruna_Lab5
                 try
                 {
                     dynamic selectedOrder = ordersDataGrid.SelectedItem;
-                    int curr_id = selectedOrder.OrderId; var deletedOrder = ctx.Orders.FirstOrDefault(s => s.OrderId ==
- curr_id);
+                    int curr_id = selectedOrder.OrderId; var deletedOrder = ctx.Orders.FirstOrDefault(s => s.OrderId == curr_id);
                     if (deletedOrder != null)
                     {
                         ctx.Orders.Remove(deletedOrder);
@@ -340,8 +322,7 @@ namespace Cozma_Miruna_Lab5
                 }
             }
         }
-
-
+        //==========OPERATIONS=========================
         private void gbOperations_Click(object sender, RoutedEventArgs e)
         {
             Button SelectedButton = (Button)e.OriginalSource;
@@ -400,6 +381,60 @@ namespace Cozma_Miruna_Lab5
                                  car.Model
                              };
             carOrdersViewSource.Source = queryOrder.ToList();
+        }
+        private void SetValidationBinding()
+        {
+            Binding firstNameValidationBinding = new Binding();
+            firstNameValidationBinding.Source = customerViewSource;
+            firstNameValidationBinding.Path = new PropertyPath("FirstName");
+            firstNameValidationBinding.NotifyOnValidationError = true;
+            firstNameValidationBinding.Mode = BindingMode.TwoWay;
+            firstNameValidationBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+
+            //string not emplty for firstNameTextBox
+            firstNameValidationBinding.ValidationRules.Add(new StringNotEmpty());
+            firstNameTextBox.SetBinding(TextBox.TextProperty, firstNameValidationBinding);
+
+            firstNameValidationBinding.ValidationRules.Add(new StringMinLength());
+            firstNameTextBox.SetBinding(TextBox.TextProperty, firstNameValidationBinding);
+
+            //string min length validator pentru firstNameTextBox
+            Binding lastNameValidationBinding = new Binding();
+            lastNameValidationBinding.Source = customerViewSource;
+            lastNameValidationBinding.Path = new PropertyPath("LastName");
+            lastNameValidationBinding.NotifyOnValidationError = true;
+            lastNameValidationBinding.Mode = BindingMode.TwoWay;
+            lastNameValidationBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+
+            //string not empty validator pentru lasNameTextBox
+            lastNameValidationBinding.ValidationRules.Add(new StringNotEmpty());
+            lastNameTextBox.SetBinding(TextBox.TextProperty, lastNameValidationBinding);
+
+            //string min length validator pentru lastNameTextBox
+            lastNameValidationBinding.ValidationRules.Add(new StringMinLength());
+            lastNameTextBox.SetBinding(TextBox.TextProperty, lastNameValidationBinding); //setare binding nou
+
+            Binding bodyStyleValidationBinding = new Binding();
+            bodyStyleValidationBinding.Source = carViewSource;
+            bodyStyleValidationBinding.Path = new PropertyPath("BodyStyle");
+            bodyStyleValidationBinding.NotifyOnValidationError = true;
+            bodyStyleValidationBinding.Mode = BindingMode.TwoWay;
+            bodyStyleValidationBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+
+            //no numbers validator pentru bodyStyleTextBox
+            bodyStyleValidationBinding.ValidationRules.Add(new NoNumericInputAllowed());
+            bodyStyleTextBox.SetBinding(TextBox.TextProperty, bodyStyleValidationBinding);
+
+            Binding modelValidationBinding = new Binding();
+            modelValidationBinding.Source = carViewSource;
+            modelValidationBinding.Path = new PropertyPath("Model");
+            modelValidationBinding.NotifyOnValidationError = true;
+            modelValidationBinding.Mode = BindingMode.TwoWay;
+            modelValidationBinding.UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged;
+
+            //upper case first letter validator pentru modelTextBox
+            modelValidationBinding.ValidationRules.Add(new UpperCaseFirstLetter());
+            modelTextBox.SetBinding(TextBox.TextProperty, modelValidationBinding);
         }
     }
 }
